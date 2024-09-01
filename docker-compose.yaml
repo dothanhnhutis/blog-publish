@@ -1,0 +1,74 @@
+services:
+  web:
+    container_name: nginx-container
+    image: wed-nginx
+    build:
+      context: ./
+      dockerfile: nginx.Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - server
+      - client
+    networks:
+      - my-net
+
+  client:
+    container_name: client-container
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    restart: always
+    # ports:
+    #   - 3000:3000
+    depends_on:
+      - server
+    networks:
+      - my-net
+    # environment:
+    #   - SERVER_URL=http://server:4000
+    #   - NEXT_PUBLIC_SERVER_URL=http://server:4000
+
+  server:
+    container_name: server-container
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: always
+    # ports:
+    #   - 4000:4000
+    # environment:
+    #   - CLIENT_URL=http://client:3000
+    networks:
+      - my-net
+
+  # redis:
+  #   container_name: redis_container
+  #   image: redis:alpine
+  #   restart: always
+  #   ports:
+  #     - 6379:6379
+  #   command: redis-server --loglevel warning
+  #   volumes:
+  #     - ./docker_volumes/cache:/data
+  #   networks:
+  #     - my-net
+
+  # postgres:
+  #   container_name: postgres_container
+  #   image: postgres
+  #   restart: always
+  #   environment:
+  #     - POSTGRES_USER=postgresql
+  #     - POSTGRES_PASSWORD=secret
+  #     - POSTGRES_DB=postgresdb
+  #   ports:
+  #     - 5432:5432
+  #   volumes:
+  #     - ./docker_volumes/postgres:/var/lib/postgresql
+  #   networks:
+  #     - my-net
+
+networks:
+  my-net:
+    driver: bridge
