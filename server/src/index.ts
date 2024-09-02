@@ -1,7 +1,6 @@
 import "express-async-errors";
 import express, { Request, Response, NextFunction } from "express";
 import morgan from "morgan";
-import http from "http";
 import helmet from "helmet";
 import configs from "./configs";
 import cors from "cors";

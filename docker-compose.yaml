@@ -19,15 +19,15 @@ services:
       context: ./client
       dockerfile: Dockerfile
     restart: always
-    # ports:
-    #   - 3000:3000
+    ports:
+      - 3000:3000
     depends_on:
       - server
     networks:
       - my-net
     # environment:
-    #   - SERVER_URL=http://server:4000
     #   - NEXT_PUBLIC_SERVER_URL=http://server:4000
+    #   - NEXT_PUBLIC_CLIENT_URL=http://client:4000
 
   server:
     container_name: server-container
@@ -35,8 +35,8 @@ services:
       context: ./server
       dockerfile: Dockerfile
     restart: always
-    # ports:
-    #   - 4000:4000
+    ports:
+      - 4000:4000
     # environment:
     #   - CLIENT_URL=http://client:3000
     networks:

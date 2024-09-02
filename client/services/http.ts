@@ -5,109 +5,94 @@ export type FetchHttpOption = RequestInit & {
 };
 
 export interface IError {
-  success: false;
-  data: { message: string };
-}
-
-export interface ISuccess<ResponseData> {
-  success: true;
+  success: boolean;
   headers: Headers;
-  data: ResponseData;
+  data: any;
 }
 
-export class FetchHttpError extends Error {
-  private data: { message: string };
+export interface FetchResponse<T extends any> {
+  success: boolean;
+  headers: Headers;
+  data: T;
+}
+
+export class FetchHttpError<T> extends Error {
+  private data;
+  private headers: Headers;
+
   constructor(props: IError) {
     super(props.data.message);
     this.data = props.data;
+    this.headers = props.headers;
   }
 
-  serialize(): IError {
+  serialize(): FetchResponse<T> {
     return {
       data: this.data,
       success: false,
+      headers: this.headers,
     };
   }
 }
 
-export class FetchHttp {
-  constructor(private _path: string) {}
-  private async fetchHttp<ResponseData>(
-    method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
-    url: string,
-    options?: FetchHttpOption
-  ) {
-    const body = options?.body ? JSON.stringify(options?.body) : undefined;
-    const baseHeaders = {
-      "Content-Type": "application/json",
-    };
-    const baseUrl =
-      options?.baseUrl || configs.NEXT_PUBLIC_SERVER_URL + this._path;
+async function fetchHttp<FetchSuccess, FetchError>(
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+  url: string,
+  options?: FetchHttpOption
+): Promise<FetchResponse<FetchSuccess>> {
+  const body = options?.body ? JSON.stringify(options?.body) : undefined;
+  const baseHeaders = {
+    "Content-Type": "application/json",
+  };
+  const baseUrl = options?.baseUrl || configs.NEXT_PUBLIC_SERVER_URL;
 
-    const fullUrl =
-      url == ""
-        ? baseUrl
-        : url.startsWith("/")
-        ? `${baseUrl}${url}`
-        : `${baseUrl}/${url}`;
+  const fullUrl = url.startsWith("/")
+    ? `${baseUrl}${url}`
+    : `${baseUrl}/${url}`;
 
-    const res = await fetch(fullUrl, {
-      ...options,
-      headers: {
-        ...baseHeaders,
-        ...options?.headers,
-      },
-      body,
-      method,
-    });
-    if (!res.ok) {
-      const { message }: { message: string } = await res.json();
-      throw new FetchHttpError({
-        success: false,
-        data: { message },
-      });
-    }
-    const data: ResponseData = await res.json();
-    const result: ISuccess<ResponseData> = {
-      success: true,
+  const res = await fetch(fullUrl, {
+    ...options,
+    headers: {
+      ...baseHeaders,
+      ...options?.headers,
+    },
+    body,
+    method,
+  });
+  if (!res.ok) {
+    const { message }: { message: string } = await res.json();
+    throw new FetchHttpError<FetchError>({
+      success: false,
       headers: res.headers,
-      data,
-    };
-    return result;
+      data: { message },
+    });
   }
-
-  protected get<ResponseData>(
-    url: string,
-    options?: Omit<FetchHttpOption, "body">
-  ) {
-    return this.fetchHttp<ResponseData>("GET", url, options);
-  }
-
-  protected post<ResponseData>(
-    url: string,
-    body: any,
-    options?: FetchHttpOption
-  ) {
-    return this.fetchHttp<ResponseData>("POST", url, { ...options, body });
-  }
-  protected patch<ResponseData>(
-    url: string,
-    body: any,
-    options?: FetchHttpOption
-  ) {
-    return this.fetchHttp<ResponseData>("PATCH", url, { ...options, body });
-  }
-  protected put<ResponseData>(
-    url: string,
-    body: any,
-    options?: FetchHttpOption
-  ) {
-    return this.fetchHttp<ResponseData>("PUT", url, { ...options, body });
-  }
-  protected delete<ResponseData>(
-    url: string,
-    options?: Omit<FetchHttpOption, "body">
-  ) {
-    return this.fetchHttp<ResponseData>("DELETE", url, { ...options });
-  }
+  const data: FetchSuccess = await res.json();
+  const result: FetchResponse<FetchSuccess> = {
+    success: true,
+    headers: res.headers,
+    data: data,
+  };
+  return result;
 }
+
+export default {
+  get<S = any, E = any>(url: string, options?: Omit<FetchHttpOption, "body">) {
+    return fetchHttp<S, E>("GET", url, options);
+  },
+  post<S = any, E = any>(url: string, body: any, options?: FetchHttpOption) {
+    return fetchHttp<S, E>("POST", url, { ...options, body });
+  },
+  patch<S = any, E = any>(url: string, body: any, options?: FetchHttpOption) {
+    return fetchHttp<S, E>("PATCH", url, { ...options, body });
+  },
+  put<S = any, E = any>(url: string, body: any, options?: FetchHttpOption) {
+    return fetchHttp<S, E>("PUT", url, { ...options, body });
+  },
+  delete<S = any, E = any>(
+    url: string,
+    options?: Omit<FetchHttpOption, "body">
+  ) {
+    return fetchHttp<S, E>("DELETE", url, { ...options });
+  },
+};

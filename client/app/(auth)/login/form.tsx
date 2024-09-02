@@ -12,7 +12,8 @@ import { DEFAULT_LOGIN_REDIRECT } from "@/routes";
 import { SignInInput } from "@/schema/auth";
 import PasswordInput from "@/components/password-input";
 import ContinueBtn from "../continue-btn";
-import { signIn } from "../actions";
+// import { signIn } from "../actions";
+import http, { FetchHttpError } from "@/services/http";
 
 export const SignInForm = ({
   registered,
@@ -61,11 +62,25 @@ export const SignInForm = ({
 
   const { isPending, mutate } = useMutation({
     mutationFn: async (input: SignInInput) => {
-      return await signIn(
-        openMFACode ? input : { email: input.email, password: input.password }
-      );
+      try {
+        const aa = await http.post<{ message: string }>(
+          "/api/v1/auth/signin",
+          formData,
+          {
+            credentials: "include",
+            baseUrl: "http://localhost",
+          }
+        );
+        return aa;
+      } catch (error: any) {
+        if (error instanceof FetchHttpError) {
+          return error.serialize();
+        } else {
+          console.log("signin() method error: ", error);
+        }
+      }
     },
-    onSuccess({ success, data }) {
+    onSuccess(data) {
       console.log(data);
       // if (!success) {
       //   if (data.message == "Your account is currently closed") {

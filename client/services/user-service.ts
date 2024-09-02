@@ -1,30 +1,21 @@
-import { SignInInput } from "@/schema/auth";
-import { FetchHttp, FetchHttpError, IError } from "./http";
+"use server";
 import { User } from "@/schema/user";
+import http from "./http";
+import { cookies } from "next/headers";
 
-class UserService extends FetchHttp {
-  constructor() {
-    super("/api/v1/users");
-  }
-
-  async currentUser(cookie: string) {
-    try {
-      return await this.get<User>("/me", {
-        headers: {
-          Cookie: cookie,
-        },
-      });
-    } catch (error: any) {
-      if (error instanceof FetchHttpError) {
-        return error.serialize();
-      } else {
-        console.log("UserService currentUser() method error: ", error);
-        return {
-          success: false,
-          data: { message: error.message },
-        } as IError;
-      }
-    }
+export async function currentUser() {
+  const cookie = cookies()
+    .getAll()
+    .map((c) => `${c.name}=${encodeURIComponent(c.value)}`)
+    .join("; ");
+  try {
+    const { data } = await http.get<User>("/api/v1/users/me", {
+      headers: {
+        Cookie: cookie,
+      },
+    });
+    return data;
+  } catch (error: any) {
+    console.log("UserService currentUser() method error: ", error);
   }
 }
-export default new UserService();

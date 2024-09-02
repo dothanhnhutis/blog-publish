@@ -9,10 +9,9 @@ import {
 } from "@/routes";
 import { NextResponse, userAgent } from "next/server";
 import type { NextRequest } from "next/server";
-import { getCurrentUser } from "@/app/actions";
 import { cookies } from "next/headers";
 import { User } from "./schema/user";
-
+import { currentUser } from "@/services/user-service";
 function redirect(request: NextRequest, path?: string) {
   const { nextUrl, url } = request;
   //add Header
@@ -21,7 +20,7 @@ function redirect(request: NextRequest, path?: string) {
   headers.set("x-current-search-params", nextUrl.searchParams.toString());
   headers.set("x-forwarded-for", request.ip || "");
   headers.set("x-userAgent", userAgent(request).ua || "");
-
+  console.log("", request.ip);
   if (path) {
     const response = NextResponse.redirect(new URL(path, url), {
       headers,
@@ -44,7 +43,7 @@ export async function middleware(request: NextRequest) {
   let emailVerified: boolean = false;
   let user: User | undefined;
   if (cookies().has("session")) {
-    user = await getCurrentUser();
+    user = await currentUser().catch((err) => undefined);
     emailVerified = user?.emailVerified || false;
   }
 
